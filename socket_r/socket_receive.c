@@ -4,7 +4,8 @@
 #include<arpa/inet.h> //inet_addr
 #include<unistd.h>    //write
 #include<sys/stat.h> 
-#include<stdlib.h> 
+#include<stdlib.h>
+#include<time.h>
  
 #define FOLDER_PATH "/home/root/client/"
 int connectServer(int* fdSocket);
@@ -12,6 +13,7 @@ int receiveFileName(int socket_desc, char* fileName);
 int receiveFile(int socket_desc, FILE* fp);
 
 static int socket_desc;
+static char server_IPaddress[128];
 
 int main(int argc , char *argv[])
 {
@@ -24,7 +26,12 @@ int main(int argc , char *argv[])
 	char buf[1000000];
 	FILE *fp;
 	struct stat filestat;
+	int start_time = 0;
+	int end_time = 0;
 
+		printf("Input server IP address to connect\n");
+		memset(server_IPaddress, '\0', sizeof(server_IPaddress));
+		scanf("%s",server_IPaddress);
 		printf("Input a file name for store\n");
 		memset(server_fileName, '\0', sizeof(server_fileName));
 		
@@ -40,22 +47,25 @@ int main(int argc , char *argv[])
 			perror("fopen");
 			exit(1);
 		}
+		start_time = time((time_t*)NULL);
 		while(1){
 			numbytes = read(socket_desc, buf, sizeof(buf));
 			printf("read %d bytes, \n", numbytes);
 			if(numbytes == 0)
 			{
 				printf("Client receice success\n");
+				end_time = time((time_t*)NULL);
 				break;
 			}
 			numbytes = fwrite(buf, sizeof(char), numbytes, fp);
 			printf("fwrite %d bytesn\n", numbytes);
-		}			
+		}	
 		fclose(fp);	
 		if ( lstat(server_fileName, &filestat) < 0){
 			exit(1);
 		}
-		printf("The file size of client receive is %lun", filestat.st_size);
+		printf("Total time of transfer file is %d seconds\n", (end_time - start_time));
+		printf("The file size of client receive is %lu byte\n", filestat.st_size);
 	
     return 0;
 }
@@ -72,7 +82,7 @@ int connectServer(int* fdSocket)
         printf("Could not create socket");
     }
          
-    server.sin_addr.s_addr = inet_addr("127.0.0.1");
+    server.sin_addr.s_addr = inet_addr(server_IPaddress);
     server.sin_family = AF_INET;
     server.sin_port = htons( 8888 );
 	
